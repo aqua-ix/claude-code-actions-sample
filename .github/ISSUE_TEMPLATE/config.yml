@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Claude Code Actions ドキュメント
+    url: https://code.claude.com/docs/en/github-actions.md
+    about: Claude Code Actionsの使い方や設定方法について
+  - name: Claude Code Actions リポジトリ
+    url: https://github.com/anthropics/claude-code-action
+    about: Claude Code Actionsの公式リポジトリ
