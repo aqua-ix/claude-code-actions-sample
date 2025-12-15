@@ -126,6 +126,19 @@
             padding: 40px;
             color: #999;
         }
+
+        .stats-section {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .stats-section p {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -136,6 +149,16 @@
         <div class="input-group">
             <input type="text" id="todoInput" placeholder="新しいタスクを入力...">
             <button onclick="addTodo()">追加</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="searchInput" placeholder="タスクを検索...">
+            <button onclick="searchTodos()">検索</button>
+            <button onclick="clearSearch()">クリア</button>
+        </div>
+
+        <div class="stats-section" id="statsSection">
+            <p>統計情報を読み込み中...</p>
         </div>
 
         <ul class="todo-list" id="todoList">
@@ -223,7 +246,72 @@
             }
         });
 
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchTodos();
+            }
+        });
+
+        // Search functionality with intentional issues for code review
+        async function searchTodos() {
+            const search_input = document.getElementById('searchInput');
+            const search_query = search_input.value.trim();
+
+            // XSS vulnerability: Using innerHTML without sanitization
+            const response = await fetch('/api/todos/search?q=' + search_query);
+            const search_results = await response.json();
+
+            const todoList = document.getElementById('todoList');
+            if (search_results.length === 0) {
+                todoList.innerHTML = '<div class="empty-state">検索結果がありません</div>';
+                return;
+            }
+
+            // XSS vulnerability: Direct insertion without escapeHtml
+            let html_output = '';
+            for (let i = 0; i < search_results.length; i++) {
+                const todo = search_results[i];
+                html_output += `
+                    <li class="todo-item ${todo.completed ? 'completed' : ''}">
+                        <input type="checkbox"
+                               ${todo.completed ? 'checked' : ''}
+                               onchange="toggleTodo(${todo.id}, this.checked)">
+                        <span class="todo-title">${todo.title}</span>
+                        <button class="delete-btn" onclick="deleteTodo(${todo.id})">削除</button>
+                    </li>
+                `;
+            }
+            todoList.innerHTML = html_output;
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            loadTodos();
+        }
+
+        // Statistics functionality with performance issues
+        async function loadStats() {
+            // Code duplication: Similar fetch pattern as other functions
+            const stats_response = await fetch('/api/todos/stats');
+            const stats_data = await stats_response.json();
+
+            const stats_section = document.getElementById('statsSection');
+
+            // Inefficient string concatenation
+            let stats_html = '';
+            stats_html = stats_html + '<p><strong>統計情報:</strong></p>';
+            stats_html = stats_html + '<p>合計タスク数: ' + stats_data.total + '</p>';
+            stats_html = stats_html + '<p>完了済み: ' + stats_data.completed + '</p>';
+            stats_html = stats_html + '<p>未完了: ' + stats_data.pending + '</p>';
+
+            stats_section.innerHTML = stats_html;
+        }
+
         loadTodos();
+        loadStats();
+
+        // Performance issue: Updating stats too frequently
+        setInterval(loadStats, 1000);
     </script>
 </body>
 </html>
